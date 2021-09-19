@@ -1,0 +1,12 @@
+[submodule "thirdparty/sokol"]
+	path = thirdparty/sokol
+	url = git@github.com:floooh/sokol.git
+[submodule "thirdparty/vk-bootstrap"]
+	path = thirdparty/vk-bootstrap
+	url = git@github.com:charles-lunarg/vk-bootstrap.git
+[submodule "thirdparty/vuk"]
+	path = thirdparty/vuk
+	url = git@github.com:zacharycarter/vuk.git
+[submodule "thirdparty/glfw"]
+	path = thirdparty/glfw
+	url = git@github.com:glfw/glfw.git
