@@ -369,9 +369,9 @@ struct Swapchain {
   Format format;
   Extent2D extent = {0, 0};
   VkImage* images;
-  uint32_t image_count;
+  uint32_t num_images;
   ImageView* image_views;
-  uint32_t image_views_count;
+  uint32_t num_image_views;
 };
 
 struct SurfaceFormatKHR {
@@ -395,7 +395,7 @@ typedef struct Context Context;
 
 Context* context_create(ContextCreateParameters params);
 void context_destroy(Context* c);
-Swapchain* add_swapchain(Context* c, Swapchain sc);
+//Swapchain* add_swapchain(Context* c, Swapchain sc);
 
 #ifdef __cplusplus
 }

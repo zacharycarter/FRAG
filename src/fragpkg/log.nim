@@ -1,5 +1,5 @@
-import strutils,
-       colorize
+import strutils, strformat,
+       colorize, winim
 
 type
   LogLevel* = enum
@@ -50,7 +50,7 @@ template logWarn*(msg: string, args: varargs[string, `$`]) =
   let iinfo = instantiationInfo()
   printWarning(0, iinfo.filename, iinfo.line, msg, args)
 
-proc logTerminalBackend(entry: LogEntry; userData: pointer) =
+proc logTerminalBackend(entry: LogEntry) =
   var msg: string
 
   case entry.kind
@@ -67,8 +67,13 @@ proc logTerminalBackend(entry: LogEntry; userData: pointer) =
 
   echo msg
 
+proc logDebuggerBackend(entry: LogEntry) =
+  when defined(vcc):
+    OutputDebugStringA(fmt"{entry.sourceFile}({entry.line}): {logEntryKinds[ord(entry.kind)]}{entry.text}")
+
 proc dispatchLogEntry(entry: LogEntry) =
-  logTerminalBackend(entry, nil)
+  logTerminalBackend(entry)
+  logDebuggerBackend(entry)
 
 proc printInfo*(channels: uint32; sourceFile: string; line: int; fmt: string; args: varargs[string]) =
   block:
@@ -145,5 +150,7 @@ proc printWarning*(channels: uint32; sourceFile: string; line: int; fmt: string;
       )
     )
   
-proc init*(ll: LogLevel = llDebug) =
+proc setLogLevel*(ll: LogLevel) =
   ctx.logLevel = ll
+
+ctx.logLevel = llDebug

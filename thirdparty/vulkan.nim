@@ -787,8 +787,8 @@ when defined(windows):
   type
     VkSurfaceKHR* {.importcpp.} = pointer
     VkSwapchainKHR* {.importcpp.} = pointer
-    VkImageView* {.importcpp.} = pointer
-    VkImage* {.importcpp.} = pointer
+    VkImage* {.importcpp: "VkImage".} = pointer
+    VkImageView* {.importcpp: "VkImageView".} = pointer
 
 type
   VkFlags {.importcpp.} = uint32
@@ -934,6 +934,10 @@ type
   VkSurfaceFormatKHR* {.importcpp.} = object
     format* {.importcpp.}: VkFormat
     colorSpace* {.importcpp.}: VkColorSpaceKHR
+  
+  VkExtent2D* {.importcpp.} = object
+    width* {.importcpp.}: uint32
+    height* {.importcpp.}: uint32
 
 converter toVkBool32*(b: bool): VkBool32 =
   result = VkBool32(b)

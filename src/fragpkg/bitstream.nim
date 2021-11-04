@@ -1,74 +1,68 @@
 import ptr_math
 
 type
-  InputMemoryBitStream* = ref object
-    buffer: ptr UncheckedArray[uint8]
-    bitHead: uint32
-    bitCapacity: uint32
-    isBufferOwner: bool
-  
   OutputMemoryBitStream* = object
     buffer: ptr UncheckedArray[uint8]
     bitHead: uint32
     bitCapacity: uint32
 
-proc newInputMemoryBitStream*(buffer: ptr UncheckedArray[uint8]; bitCount: uint32): InputMemoryBitStream =
-  result = InputMemoryBitStream(
-    buffer: buffer,
-    bitCapacity: bitCount,
-    bitHead: 0'u32,
-    isBufferOwner: false
-  )
+proc `=destroy`*(bs: var OutputMemoryBitStream) =
+  if bs.buffer != nil:
+    dealloc(bs.buffer)
 
-proc resetToCapacity*(imbs: InputMemoryBitStream; byteCapacity: uint32) =
-  imbs.bitCapacity = byteCapacity shl 3
-  imbs.bitHead = 0
+proc reallocBuffer(bs: var OutputMemoryBitStream; newBitLength: uint32) =
+  if bs.buffer.isNil:
+    bs.buffer = cast[ptr UncheckedArray[uint8]](alloc0(newBitLength shr 3))
+  else:
+    var tmpBuffer = cast[ptr UncheckedArray[uint8]](alloc0(newBitLength shr 3))
+    copyMem(tmpBuffer.addr, bs.buffer.addr, bs.bitCapacity shr 3)
+    dealloc(bs.buffer)
+    bs.buffer = move(tmpBuffer)
+  
+  # TODO: Handle realloc failure
 
-proc readBits(imbs: InputMemoryBitStream;`out`: ptr uint8; bitCount: uint32) =
+  bs.bitCapacity = newBitLength
+
+proc newOutputMemoryBitStream*(): OutputMemoryBitStream =
+  result.reallocBuffer(1500*8)
+
+proc getBufferPtr*(bs: OutputMemoryBitStream): ptr UncheckedArray[uint8] =
+  result = bs.buffer
+
+proc getByteLength*(bs: OutputMemoryBitStream): uint32 =
+  result = (bs.bitHead + 7) shr 3
+
+proc writeBits(bs: var OutputMemoryBitStream; data: uint8; bitCount: uint32) =
+  let nextBitHead = bs.bitHead + bitCount
+
+  if nextBitHead > bs.bitCapacity:
+    bs.reallocBuffer(max(bs.bitCapacity * 2, nextBitHead))
+  
   let
-    byteOffset = imbs.bitHead shr 3
-    bitOffset = imbs.bitHead and 0x7
-  
-  `out`[] = cast[uint8](imbs.buffer[byteOffset]) shr bitOffset
+    byteOffset = bs.bitHead shr 3'u32
+    bitOffset = bs.bitHead and 0x7'u32
+    currentMask = not(0xff'u32 shl bitOffset).uint8
+    bitsFreeThisByte = 8 - bitOffset
 
-  let bitsFreeThisByte = 8 - bitOffset
+  bs.buffer[byteOffset] = (bs.buffer[byteOffset] and currentMask) or (data shl bitOffset)
+
   if bitsFreeThisByte < bitCount:
-    `out`[] = `out`[] or cast[uint8](imbs.buffer[byteOffset + 1]) shl bitsFreeThisByte
-
-  `out`[] = `out`[] and ( not( 0x00ff'u8 shl bitCount ) )
-
-  imbs.bitHead += bitCount
-
-proc readBits(imbs: InputMemoryBitStream;`out`: pointer; bitCount: uint32) =
-  var destByte = cast[ptr uint8](`out`)
-
-  var bc = bitCount
-  while bc > 8:
-    readBits(imbs, destByte, 8)
-    destByte += 1
-    bc -= 8
+    bs.buffer[byteOffset + 1] = data shr bitsFreeThisByte
   
-  if bc > 0:
-    readBits(imbs, destByte, bc)
+  bs.bitHead = nextBitHead
 
-proc read*(imbs: InputMemoryBitStream; `out`: var uint32; bitCount: uint32 = 32) =
-  readBits(imbs, addr(`out`), bitCount)
+proc writeBits(bs: var OutputMemoryBitStream; data: pointer; bitCount: uint32) =
+  var
+    count = bitCount 
+    srcByte = cast[ptr UncheckedArray[uint8]](data)[0].addr
+  
+  while count > 8:
+    bs.writeBits(srcByte[], 8)
+    srcByte += 1
+    count -= 8
+  
+  if count > 0:
+    bs.writeBits(srcByte[], count)
 
-proc newOutputMemoryBitStream*(buffer: ptr UncheckedArray[uint8]; bitCount: uint32): InputMemoryBitStream =
-  result = InputMemoryBitStream(
-    buffer: buffer,
-    bitCapacity: bitCount,
-    bitHead: 0'u32,
-    isBufferOwner: false
-  )
-
-proc writeBits(ombs: OutputMemoryBitStream; `in`: pointer; bitCount: uint32) =
-  var srcByte = cast[cstring](`in`)
-
-  var bc = bitCount
-  while bc > 8:
-    
-
-proc write*[T](ombs: OutputMemoryBitStream; `in`: T; bitCount: uint32 = sizeof(T) * 8) =
-  # TODO: add check to make sure only primitive data types can be passed here
-  writeBits(ombs, addr(`in`), bitCount)
+proc write*[T](bs: var OutputMemoryBitStream; data: var T; bitCount = (sizeof(T) * 8).uint32) =
+  bs.writeBits(cast[pointer](data.addr), bitCount)

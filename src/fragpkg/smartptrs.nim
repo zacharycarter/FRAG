@@ -65,19 +65,22 @@ type
 proc `=destroy`*[T](p: var SharedPtr[T]) =
   mixin `=destroy`
   if p.val != nil:
-    if (when compileOption("threads"):
-          atomicLoadN(addr p.val[].atomicCounter, ATOMIC_CONSUME) == 0 else:
-          p.val[].atomicCounter == 0):
-      `=destroy`(p.val[])
+    if (
       when compileOption("threads"):
-        deallocShared(p.val)
-      else:
-        dealloc(p.val)
+      atomicLoadN(addr p.val[].atomicCounter, 1.AtomMemModel) == 0
     else:
-      when compileOption("threads"):
-        discard atomicDec(p.val[].atomicCounter)
-      else:
-        dec(p.val[].atomicCounter)
+      p.val[].atomicCounter == 0
+    ):
+      `=destroy`(p.val[])
+    when compileOption("threads"):
+      deallocShared(p.val)
+    else:
+      dealloc(p.val)
+  else:
+    when compileOption("threads"):
+      discard atomicDec(p.val[].atomicCounter)
+    else:
+      dec(p.val[].atomicCounter)
 
 proc `=`*[T](dest: var SharedPtr[T], src: SharedPtr[T]) =
   if src.val != nil:

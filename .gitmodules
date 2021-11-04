@@ -10,3 +10,21 @@
 [submodule "thirdparty/glfw"]
 	path = thirdparty/glfw
 	url = git@github.com:glfw/glfw.git
+[submodule "thirdparty/JoltPhysics"]
+	path = thirdparty/JoltPhysics
+	url = git@github.com:jrouwe/JoltPhysics.git
+[submodule "thirdparty/GTS-GamesTaskScheduler"]
+	path = thirdparty/GTS-GamesTaskScheduler
+	url = git@github.com:GameTechDev/GTS-GamesTaskScheduler.git
+[submodule "thirdparty/entt"]
+	path = thirdparty/entt
+	url = git@github.com:skypjack/entt.git
+[submodule "thirdparty/daScript"]
+	path = thirdparty/daScript
+	url = git@github.com:GaijinEntertainment/daScript.git
+[submodule "thirdparty/cr"]
+	path = thirdparty/cr
+	url = git@github.com:fungos/cr.git
+[submodule "thirdparty/stackwalkerc"]
+	path = thirdparty/stackwalkerc
+	url = git@github.com:septag/stackwalkerc.git

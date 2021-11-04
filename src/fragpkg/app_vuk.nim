@@ -1,5 +1,5 @@
-import strformat,
-       ../../thirdparty/[std_vector, vkb, glfw, vuk],
+import macros, strformat,
+       vkb, glfw, vulkan, vuk,
        exit_code
 
 export exit_code
@@ -8,18 +8,25 @@ const
   limitFPS = 1.0'f64 / 60.0'f64 # TODO: Make configurable
 
 type
-  VkNonDispatchableHandle = uint64
-
   FragApp* = object
     device: VkDevice
     physicalDevice: VkPhysicalDevice
     graphicsQueue: VkQueue
     context: ptr Context
-    swapchain: SwapchainRef
+    swapchain: ptr vuk.Swapchain
     window: ptr GLFWWindow
     surface: VkSurfaceKHR
     vkbInstance: Instance
     vkbDevice: Device
+
+{.emit: """/*INCLUDESECTION*/
+#include <vector>
+#include <vulkan/vulkan.h>
+
+/*TYPESECTION*/
+typedef std::vector<VkImage> ImageVector;
+typedef std::vector<VkImageView> ImageViewVector;
+""".}
 
 proc debugCb(messageSeverity: VkDebugUtilsMessageSeverityFlagBitsEXT; messageType: VkDebugUtilsMessageTypeFlagsEXT; pCallbackData: ptr VkDebugUtilsMessengerCallbackDataEXT; puserData: pointer): VkBool32 {.cdecl.} =
   let 
@@ -48,28 +55,27 @@ proc makeSwapchain*(vkbDevice: Device): vuk.Swapchain =
     
     let vkbSwapchain = swapchainRet.value()
 
-    var sw: vuk.Swapchain
     let 
       imagesRet = vkbSwapchain.getImages()
       imageViewsRet = vkbSwapchain.getImageViews()
+    
       images = imagesRet.value()
       imageViews = imageViewsRet.value()
     
-    for i in 0 ..< images.len:
-      # sw.images[i] = images[i]
-      discard
-      
-    
-    
+    newSwapchain(images, imageViews, vkbSwapchain.extent.width)
+
 
 proc run*(app: var FragApp): FragExitCode =
   block:
     var builder: InstanceBuilder
 
-    let instRet = builder.setAppName("FRAG") # TODO: Make configurable
+    let instRet = builder
       .requestValidationLayers()
       .setDebugCallback(debugCb)
-      .useDefaultDebugMessenger()
+      .setAppName("TBD") # TODO: Make configurable
+      .setEngineName("FRAG")
+      .requireApiVersion(1, 2, 0)
+      .setAppVersion(0, 1, 0)
       .build()
 
     if not instRet.hasValue():
@@ -103,6 +109,7 @@ proc run*(app: var FragApp): FragExitCode =
       break
 
     let vkbPhysicalDevice = physRet.value()
+    app.physicalDevice = vkbPhysicalDevice.physicalDevice
     
     let deviceBuilder = newDeviceBuilder(vkbPhysicalDevice)
 
@@ -142,6 +149,7 @@ proc run*(app: var FragApp): FragExitCode =
       graphicsQueueFamilyIndex: graphicsQueueFamilyIndex
     ))
 
-    app.swapchain = app.context.addSwapchain(makeSwapchain(app.vkbDevice))
+    # app.swapchain = app.context.addSwapchain(makeSwapchain(app.vkbDevice))
+    discard makeSwapchain(app.vkbDevice)
 
     result = fecSuccess

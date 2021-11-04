@@ -1,3 +1,7 @@
-import log
+import api
 
-export log
+var
+  sInternalAppAPI*: FragInternalAppAPI
+  sAppAPI*: FragAppAPI
+
+  sPluginApi*: FragPluginAPI

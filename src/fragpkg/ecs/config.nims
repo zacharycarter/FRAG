@@ -1,3 +1,5 @@
+switch("path", "../../")
+
 when defined(windows):
   #################################################################################
   # A compiler must be specified - on windows vcc is used by default.             #
@@ -24,11 +26,10 @@ else:
 #                                                                                       #
 # If no option is provided, networked multiplayer will be disabled.                     #
 #########################################################################################
---d: steam
---d: host
 --gc: arc
+--u: host
 --threads: on
-# --linetrace: off
-# --stacktrace: off
+--linetrace: off
+--stacktrace: off
 --debugger: native
 --tlsEmulation: off

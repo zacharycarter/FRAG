@@ -1,5 +1,16 @@
-import fragpkg/[app, smartptrs]
+import fragpkg/api
+
+export api
+
+when defined Windows:
+  {.emit: """# pragma section(".state", read, write)""".}
 
 when isMainModule:
-  let game = newUniquePtr[FragApp](newFragApp())
-  quit(game.run())
+  import cligen,
+         fragpkg/[application, smartptrs]
+
+  proc frag(app: string) =
+    application.staticInit()
+    sFragApp.run(app)
+
+  dispatch(frag, help = {"app": "shared library with application / game code to load"})

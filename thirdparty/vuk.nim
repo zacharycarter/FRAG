@@ -1,11 +1,20 @@
 import os
 
-import vulkan
+import vkb
+
+{.emit: """/*INCLUDESECTION*/
+#include <vector>
+#include <vulkan/vulkan.h>
+
+/*TYPESECTION*/
+typedef std::vector<VkImage> ImageVector;
+typedef std::vector<VkImageView> ImageViewVector;
+""".}
 
 const
   thirdPartyDir = currentSourcePath.parentDir()
   sdkPath = thirdPartyDir/"vuk"
-  vkSdkPath = "C:\\VulkanSDK\\1.2.189.1" # TODO: This should be set by an env var with some sort of default value
+  vkSdkPath = "C:\\VulkanSDK\\1.2.189.2" # TODO: This should be set by an env var with some sort of default value
   vkHeaderDir = vkSdkPath/"Include"
   vukHeader = thirdPartyDir/"vuk_c99.h"
 
@@ -24,11 +33,11 @@ when defined(Windows):
   when defined(vcc):
     {.passC: "-I" & thirdPartyDir.}
     {.passC: "-I" & vkHeaderDir.}
-    {.passC: "/I" & sdkPath/"ext/VulkanMemoryAllocator/include".}
-    {.passC: "/I" & sdkPath/"ext/plf_colony".}
-    {.passC: "/I" & sdkPath/"ext/concurrentqueue".}
-    {.passC: "/I" & sdkPath/"ext/robin-hood-hashing/src/include".}
-    {.passC: "/I" & sdkPath/"ext/SPIRV-Cross".}
+    {.passC: "-I" & sdkPath/"ext/VulkanMemoryAllocator/include".}
+    {.passC: "-I" & sdkPath/"ext/plf_colony".}
+    {.passC: "-I" & sdkPath/"ext/concurrentqueue".}
+    {.passC: "-I" & sdkPath/"ext/robin-hood-hashing/src/include".}
+    {.passC: "-I" & sdkPath/"ext/SPIRV-Cross".}
     {.link: sdkPath/"ext/VulkanMemoryAllocator/build/src/Debug/VulkanMemoryAllocator.lib".}
     {.link: thirdPartyDir/"vuk/build/ext/SPIRV-Cross/Debug/spirv-cross-cored.lib".}
     {.link: thirdPartyDir/"vuk/build/ext/SPIRV-Cross/Debug/spirv-cross-glsld.lib".}
@@ -372,7 +381,6 @@ type
     b: ComponentSwizzle
     a: ComponentSwizzle
 
-  Image* {.importcpp, header: vukHeader.} = VkImage
   ImageView* {.importcpp, header: vukHeader.} = object
     payload* {.importcpp.}: VkImageView
     image* {.importcpp.}: VkImage
@@ -394,12 +402,10 @@ type
     surface* {.importcpp.}: VkSurfaceKHR
     format* {.importcpp.}: Format
     extent* {.importcpp.}: Extent2D
-    images* {.importcpp.}: ptr UncheckedArray[Image]
-    image_count* {.importcpp.}: uint32
+    images* {.importcpp.}: ptr UncheckedArray[VkImage]
+    num_images* {.importcpp.}: uint32
     image_views* {.importcpp.}: ptr UncheckedArray[ImageView]
-    image_views_count* {.importcpp.}: uint32
-  
-  SwapchainRef* {.importcpp, header: vukHeader.} = ptr Swapchain
+    num_image_views* {.importcpp.}: uint32
 
   SurfaceFormatKHR* {.importcpp, header: vukHeader.} = object
     format* {.importcpp.}: Format
@@ -427,4 +433,19 @@ proc newVkImageUsageFlagBits*(bits: int32): VkImageUsageFlagBits {.importcpp:
   "VkImageUsageFlagBits(#)".}
 
 proc createContext*(params: ContextCreateParameters): ptr Context {.importcpp: "context_create(@)", header: vukHeader.}
-proc addSwapchain*(c: ptr Context; sc: Swapchain): SwapchainRef {.importcpp: "add_swapchain(@)", header: vukHeader.}
+# proc addSwapchain*(c: ptr Context; sc: Swapchain): ptr Swapchain {.importcpp: "add_swapchain(@)", header: vukHeader.}
+
+proc newSwapchain*(images: ImageVector; imageViews: ImageViewVector): Swapchain =
+  result.images = cast[ptr UncheckedArray[VkImage]](allocShared0(sizeof(VkImage) * images.size().int))
+  result.num_images = images.size()
+
+  copyMem(result.images[0].addr, images.data(), sizeof(VkImage) * images.size().int)
+
+  result.image_views = cast[ptr UncheckedArray[ImageView]](allocShared0(sizeof(ImageView) * imageViews.size().int))
+  result.num_image_views = images.size()
+
+  for i in 0 ..< imageViews.size():
+    result.image_views[i].payload = imageViews[i]
+  
+  # result.extent = newExtent2D(width: )
+
