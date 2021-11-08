@@ -6,7 +6,9 @@ declareFragPluginMain(ecs, plugin, e):
     discard
   of fpeLoad:
     if plugin.iteration == 1:
-      echo "Initializing plugin!"
+      echo "Initializing the ECS plugin!"
+    else:
+      echo "already initialized!"
   of fpeUnload:
     discard
   of fpeClose:
@@ -14,6 +16,7 @@ declareFragPluginMain(ecs, plugin, e):
   else:
     discard
 
-  result = 0
+declareFragPluginEventHandler(ecs, e):
+  discard
 
 declareFragPlugin(ecs, 1000, "Entity-component-system plugin", nil, 0)

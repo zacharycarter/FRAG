@@ -3,6 +3,11 @@ import config, cstringutils
 export config
 
 type
+  FragVersion* = object
+    major*: int32
+    minor*: int32
+    patch*: array[32, char]
+
   FragAppEvent = object
     frameCount: uint64
 
@@ -35,6 +40,9 @@ type
 
   FragAppAPI* = object
     name*: proc(): cstring {.cdecl.}
+  
+  FragCoreAPI* = object
+    version*: proc(): FragVersion {.cdecl.}
 
   FragPluginAPI* = object
     load*: proc(name: cstring): bool {.cdecl.}
@@ -78,7 +86,21 @@ template declareFragPlugin*(pluginName, pluginVersion, pluginDescription,
 template declareFragPluginMain*(name, pluginParamName, eventParamName,
     body: untyped) =
   proc fragPluginMain*(pluginParamName: var FragPlugin;
-      eventParamName: FragPluginEvent): int32 {.cdecl, exportc: "fragPluginMain", dynlib.} =
+      eventParamName: FragPluginEvent): int32 {.cdecl, exportc: "cr_main", dynlib.} =
+    body
+
+template declareFragAppMain*(name, pluginParamName, eventParamName,
+    body: untyped) =
+  proc fragPluginMain*(pluginParamName: var FragPlugin;
+      eventParamName: FragPluginEvent): int32 {.cdecl, exportc: "cr_main", dynlib.} =
+    body
+
+template declareFragPluginEventHandler*(name, eventParamName, body: untyped) =
+  proc fragPluginEventHandler(eventParamName: FragAppEvent) {.cdecl, exportc: "fragPluginEventHandler", dynlib.} =
+    body
+
+template declareFragAppEventHandler*(name, eventParamName, body: untyped) =
+  proc fragPluginEventHandler(eventParamName: FragAppEvent) {.cdecl, exportc: "fragPluginEventHandler", dynlib.} =
     body
 
 template major*(v: untyped): untyped = (v div 1000)

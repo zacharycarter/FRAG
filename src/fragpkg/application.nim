@@ -35,7 +35,7 @@ proc `=destroy`*(fa: var FragApp) =
   glfwTerminate()
 
 const
-  dt = 0.1'f64
+  dt = 0.01'f64
   maxFrameTime = 0.25'f64
 
 var
@@ -43,7 +43,7 @@ var
 
 
   defaultAppName: array[64, char]
-  defaultWindowTitle: array[64, char]
+  defaultAppTitle: array[64, char]
   defaultPlugins: array[FragMaxPlugins, array[32, char]]
 
 proc errorCb(error: int32; description: cstring) {.cdecl.} =
@@ -75,6 +75,9 @@ proc init(fa: var FragApp): bool =
 
     result = true
 
+proc frame() = 
+  core.frame()
+
 proc appName(): cstring {.cdecl.} =
   result = sFragApp[].conf.appName
 
@@ -98,10 +101,16 @@ proc run*(fa: var FragApp; appFilepath: string) =
         messageBox(&"symbol `fragApp` not found in shared library at filepath: {appFilepath}")
         break outer
 
+      fa.conf = FragConfig(
+        appName: defaultAppName,
+        appTitle: defaultAppTitle,
+        appVersion: 1000
+      )
+
       gameConfigFn(fa.conf)
 
       saveConfigStr(defaultAppName, fa.conf.appName)
-      saveConfigStr(defaultWindowTitle, fa.conf.windowTitle)
+      saveConfigStr(defaultAppTitle, fa.conf.appTitle)
 
       for i in 0 ..< FragMaxPlugins:
         if not fa.conf.plugins[i].isNil:
@@ -141,8 +150,27 @@ proc run*(fa: var FragApp; appFilepath: string) =
         messageBox("failed initializing plugins, see log for details")
         break outer
 
+    var
+      frameTime: float64
+
+      t = 0.0'f64
+      accumulator = 0.0'f64
+      currentTime = glfwGetTime()
+
     while not glfwWindowShouldClose(fa.window):
-      glfwPollEvents()
+      let newTime = glfwGetTime()
+      
+      frameTime = newTime - currentTime
+      if frameTime > 0.25'f64:
+        frameTime = 0.25'f64
+      currentTime = newTime
+      
+      accumulator += frameTime
+
+      while accumulator >= dt:
+        frame()
+        t += dt
+        accumulator -= dt
 
 sInternalAppAPI = FragInternalAppAPI(
   gameModule: getGameModule

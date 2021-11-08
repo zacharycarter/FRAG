@@ -25,10 +25,11 @@ else:
 # If no option is provided, networked multiplayer will be disabled.                     #
 #########################################################################################
 --d: steam
+--d: useMalloc
 --d: host
 --gc: arc
 --threads: on
-# --linetrace: off
-# --stacktrace: off
+--linetrace: off
+--stacktrace: off
 --debugger: native
 --tlsEmulation: off

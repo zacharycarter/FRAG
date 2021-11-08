@@ -8,7 +8,6 @@ when defined(host):
     {.passC: "/I" & sdkPath/"cr".}
   # {.compile: "./cr_impl.cpp".}
   {.emit:"""/*INCLUDESECTION*/
-  #define CR_MAIN_FUNC "fragPluginMain"
   #define CR_DEBUG
   #define CR_HOST CR_UNSAFE
   #include "cr.h"
@@ -51,7 +50,9 @@ const
 when defined(host):
   const
     header = "H:\\Projects\\FRAG\\thirdparty\\cr\\cr.h"
-  
+
+  proc `==`*(a, b: cr_failure): bool {.borrow.}
+
   proc openPlugin*(ctx: cr_plugin, fullpath: cstring): bool {.importcpp: "cr_plugin_open(@)", header: header.}
   proc updatePlugin*(ctx: cr_plugin, reloadCheck: bool = true): int32 {.importcpp: "cr_plugin_update(@)", header: header.}
   proc closePlugin*(ctx: cr_plugin) {.importcpp: "cr_plugin_close(@)", header: header.}

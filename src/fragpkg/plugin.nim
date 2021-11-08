@@ -31,6 +31,7 @@ type
     info: FragPluginInfo
     order: int32
     filepath: array[FragMaxPath, char]
+    updateTime: float32
     deps: seq[FragPluginDependency]
 
   FragPluginManager* = object
@@ -42,6 +43,9 @@ type
 
 var
   sFragPlugin*: UniquePtr[FragPluginManager]
+
+proc newFragPluginItem*(): FragPluginItem =
+  result.updateTime = FragPluginUpdateInterval
 
 proc staticInit*() =
   sFragPlugin = newUniquePtr[FragPluginManager](FragPluginManager())
@@ -62,7 +66,7 @@ proc init*(mgr: FragPluginManager): bool =
 proc loadPluginAbs*(filepath: string; entry: bool;
     entryDeps: ptr UncheckedArray[cstring]; numEntryDeps: int32): bool =
   block:
-    var item: FragPluginItem
+    var item = newFragPluginItem()
     item.crpfp.plug.userData = sPluginApi.addr
 
     var dll: pointer = nil
@@ -179,8 +183,8 @@ proc initPlugins*(): bool =
         # swReloadModules()
         discard
 
-      if not openPlugin(item[].crpfp.plug, item.filepath):
-        logError("failed initializing plugin: $1", item.filepath)
+      if not openPlugin(item[].crpfp.plug, "H:\\Projects\\FRAG\\" & $item.filepath.cstring):
+        logError("failed initializing plugin: $1", item.filepath.cstring)
         break outer
 
       if item.info.name[0] != char(0):
@@ -189,6 +193,25 @@ proc initPlugins*(): bool =
 
     sFragPlugin[].loaded = true
     result = true
+
+proc update*(dt: float32) =
+  for i in sFragPlugin[].pluginUpdateOrder:
+    let plugin = sFragPlugin[].plugins[sFragPlugin[].pluginUpdateOrder[i]].addr
+
+    var checkReload = false
+    plugin.updateTime += dt
+    if plugin.updateTime >= FragPluginUpdateInterval:
+      checkReload = true
+      plugin.updateTime = 0
+    
+    let r = updatePlugin(plugin.crpfp.plug, true)
+    if r == -2:
+      logError("plugin: '$1' - failed to reload", sFragPlugin[].plugins[i].info.name.cstring)
+    elif r < -1:
+      if plugin.crpfp.plug.failure == CR_USER:
+        logError("plugin: '$1' - failed (main ret = $2)", sFragPlugin[].plugins[i].info.name.cstring, r)
+      else:
+        logError("plugin: '$1' crashed", sFragPlugin[].plugins[i].info.name.cstring)
 
 proc loadPlugin(name: cstring): bool {.cdecl.} =
   assert(not sFragPlugin[].loaded, "loading of additional plugins forbidden after `initPlugins` is invoked")

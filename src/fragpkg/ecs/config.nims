@@ -27,6 +27,7 @@ else:
 # If no option is provided, networked multiplayer will be disabled.                     #
 #########################################################################################
 --gc: arc
+--d: useMalloc
 --u: host
 --threads: on
 --linetrace: off

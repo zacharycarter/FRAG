@@ -1,11 +1,12 @@
 const
   FragMaxPlugins* = 64
   FragMaxPath* = 256
+  FragPluginUpdateInterval* = 1.0'f32
 
 type
   FragConfig* = object
     appName*: cstring
-    windowTitle*: cstring
+    appTitle*: cstring
     pluginPath*: cstring
     appVersion*: uint32
     
