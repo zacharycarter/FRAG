@@ -204,12 +204,12 @@ proc update*(dt: float32) =
       checkReload = true
       plugin.updateTime = 0
     
-    let r = updatePlugin(plugin.crpfp.plug, true)
-    if r == -2:
+    let res = updatePlugin(plugin.crpfp.plug, true)
+    if res == -2:
       logError("plugin: '$1' - failed to reload", sFragPlugin[].plugins[i].info.name.cstring)
-    elif r < -1:
+    elif res < -1:
       if plugin.crpfp.plug.failure == CR_USER:
-        logError("plugin: '$1' - failed (main ret = $2)", sFragPlugin[].plugins[i].info.name.cstring, r)
+        logError("plugin: '$1' - failed (main ret = $2)", sFragPlugin[].plugins[i].info.name.cstring, res)
       else:
         logError("plugin: '$1' crashed", sFragPlugin[].plugins[i].info.name.cstring)
 
@@ -220,4 +220,4 @@ proc loadPlugin(name: cstring): bool {.cdecl.} =
 
 sPluginAPI = FragPluginAPI(
   load: loadPlugin
-)  
+)

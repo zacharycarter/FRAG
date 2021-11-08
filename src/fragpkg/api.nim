@@ -2,6 +2,9 @@ import config, cstringutils
 
 export config
 
+var
+  stateSegmentDefined = false
+
 type
   FragVersion* = object
     major*: int32
@@ -65,10 +68,15 @@ const
   fpeUnload* = FragPluginEvent(2)
   fpeClose* = FragPluginEvent(3)
 
-when defined Windows:
-  {.pragma: fragState, codegenDecl: """$# __declspec(allocate(".state")) $#""".}
-elif defined MacOSX:
-  {.pragma: fragState, codegenDecl: """$# __attribute__((used, section("__DATA,__state"))) $#""".}
+template initFragPluginState*() =
+  when defined Windows:
+    if not stateSegmentDefined:
+      {.emit: """#pragma section(".state", read, write)""".}
+      stateSegmentDefined = true
+
+    {.pragma: fragState, codegenDecl: """$# __declspec(allocate(".state")) $#""".}
+  elif defined MacOSX:
+    {.pragma: fragState, codegenDecl: """$# __attribute__((used, section("__DATA,__state"))) $#""".}
 
 template declareFragApp*(confParamName, body: untyped) =
   proc fragApp*(confParamName: var FragConfig) {.cdecl, exportc, dynlib.} =

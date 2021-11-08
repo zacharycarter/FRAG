@@ -2,8 +2,9 @@ import fragpkg/api
 
 export api
 
-when defined Windows:
-  {.emit: """# pragma section(".state", read, write)""".}
+static:
+  when defined Windows:
+    {.emit: """#pragma section(".state", read, write)""".}
 
 when isMainModule:
   import cligen,

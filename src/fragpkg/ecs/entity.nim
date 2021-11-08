@@ -1,4 +1,12 @@
-import frag
+import entt,
+       frag
+
+initFragPluginState()
+
+var registry {.fragState.}: Registry
+
+proc init() =
+  echo "inializing ECS plugin"
 
 declareFragPluginMain(ecs, plugin, e):
   case e
@@ -6,9 +14,9 @@ declareFragPluginMain(ecs, plugin, e):
     discard
   of fpeLoad:
     if plugin.iteration == 1:
-      echo "Initializing the ECS plugin!"
+      init()
     else:
-      echo "already initialized!"
+      echo "ECS plugin reloaded"
   of fpeUnload:
     discard
   of fpeClose:
